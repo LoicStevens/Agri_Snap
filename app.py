@@ -230,3 +230,6 @@ def predict_crop():
 # ============ LANCEMENT ================
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+@app.route('/', methods=['GET'])
+def index():
+    return "🌿 API AgriSnap en ligne !"
