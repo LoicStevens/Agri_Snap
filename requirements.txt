@@ -6,4 +6,5 @@ pandas
 joblib
 requests
 Pillow
+scikit-learn
 gunicorn
