@@ -9,7 +9,7 @@ import pandas as pd
 from io import BytesIO
 import random
 import requests
-
+import gc
 # ============ CONFIGURATION ============
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
@@ -39,7 +39,9 @@ def is_soil_image(image_bytes):
     with torch.no_grad():
         output = soil_binary_model(tensor)
         prediction = torch.argmax(output, dim=1).item()
-        return soil_binary_classes[prediction] == "soil"
+    del tensor, output
+    gc.collect()
+    return soil_binary_classes[prediction] == "soil"
 
 # ============ MODEL 2: soil type ============
 class_names = ['alluvial soil', 'black soil', 'clay soil', 'red soil']
@@ -70,7 +72,9 @@ def predict_soil_type(image_tensor):
         outputs = soil_type_model(image_tensor)
         probabilities = F.softmax(outputs, dim=1)[0]
         predicted_idx = torch.argmax(probabilities).item()
-        return class_names[predicted_idx], probabilities[predicted_idx].item()
+    del image_tensor, outputs
+    gc.collect()
+    return class_names[predicted_idx], probabilities[predicted_idx].item()
 
 def get_avg_soil_properties_from_csv(color, filepath='soil crop recommendation.txt'):
     try:
@@ -230,6 +234,4 @@ def predict_crop():
 # ============ LANCEMENT ================
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-@app.route('/', methods=['GET'])
-def index():
-    return "🌿 API AgriSnap en ligne !"
+
