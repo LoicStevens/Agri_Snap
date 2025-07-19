@@ -10,9 +10,10 @@ from io import BytesIO
 import random
 import requests
 import gc
+
 # ============ CONFIGURATION ============
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 WEATHER_API_KEY = "41164adf26a1496389710628251207"
@@ -25,36 +26,53 @@ transform = transforms.Compose([
                          [0.229, 0.224, 0.225])
 ])
 
-# ============ MODEL 1: soil / not_soil ============
-soil_binary_model = models.resnet18(weights=None)
-soil_binary_model.fc = torch.nn.Linear(soil_binary_model.fc.in_features, 2)
-soil_binary_model.load_state_dict(torch.load("soil_filter_model.pth", map_location=device))
-soil_binary_model.to(device)
-soil_binary_model.eval()
-soil_binary_classes = ['not_soil', 'soil']
+# ============ Chargement MODELS ============
+def load_soil_binary_model():
+    model = models.resnet18(weights=None)
+    model.fc = torch.nn.Linear(model.fc.in_features, 2)
+    model.load_state_dict(torch.load("soil_filter_model.pth", map_location=device))
+    model.to(device)
+    model.eval()
+    return model
 
+def load_soil_type_model():
+    model = models.resnet18(weights=None)
+    model.fc = torch.nn.Linear(model.fc.in_features, 4)
+    model.load_state_dict(torch.load("best_soil_model.pth", map_location=device))
+    model.to(device)
+    model.eval()
+    return model
+
+def load_crop_model():
+    return joblib.load("NBClassifier.pkl")
+
+soil_binary_classes = ['not_soil', 'soil']
+soil_type_classes = ['alluvial soil', 'black soil', 'clay soil', 'red soil']
+
+# ============ FONCTIONS DE PREDICTION ============
 def is_soil_image(image_bytes):
+    model = load_soil_binary_model()
     image = Image.open(BytesIO(image_bytes)).convert("RGB")
     tensor = transform(image).unsqueeze(0).to(device)
     with torch.no_grad():
-        output = soil_binary_model(tensor)
+        output = model(tensor)
         prediction = torch.argmax(output, dim=1).item()
-    del tensor, output
+    del model, tensor, output
     gc.collect()
     return soil_binary_classes[prediction] == "soil"
 
-# ============ MODEL 2: soil type ============
-class_names = ['alluvial soil', 'black soil', 'clay soil', 'red soil']
-soil_type_model = models.resnet18(weights=None)
-soil_type_model.fc = torch.nn.Linear(soil_type_model.fc.in_features, len(class_names))
-soil_type_model.load_state_dict(torch.load("best_soil_model.pth", map_location=device))
-soil_type_model.to(device)
-soil_type_model.eval()
+def predict_soil_type(image_tensor):
+    model = load_soil_type_model()
+    image_tensor = image_tensor.to(device)
+    with torch.no_grad():
+        outputs = model(image_tensor)
+        probabilities = F.softmax(outputs, dim=1)[0]
+        predicted_idx = torch.argmax(probabilities).item()
+    del model, image_tensor, outputs
+    gc.collect()
+    return soil_type_classes[predicted_idx], probabilities[predicted_idx].item()
 
-# ============ MODEL 3: Naive Bayes crop model ============
-crop_model, crop_classes = joblib.load("NBClassifier.pkl")
-
-# ============ Couleurs par type de sol ============
+# ============ CSV & COULEURS ============
 soil_color_mapping = {
     'clay soil': ['gray'],
     'alluvial soil': ['brown', 'yellowish brown', 'dark brown', 'darkbrown', 'lihgtish brown', 'other'],
@@ -66,16 +84,6 @@ def get_plausible_color(soil_type):
     colors = soil_color_mapping.get(soil_type.lower().strip(), [])
     return random.choice(colors) if colors else "unknown"
 
-def predict_soil_type(image_tensor):
-    image_tensor = image_tensor.to(device)
-    with torch.no_grad():
-        outputs = soil_type_model(image_tensor)
-        probabilities = F.softmax(outputs, dim=1)[0]
-        predicted_idx = torch.argmax(probabilities).item()
-    del image_tensor, outputs
-    gc.collect()
-    return class_names[predicted_idx], probabilities[predicted_idx].item()
-
 def get_avg_soil_properties_from_csv(color, filepath='soil crop recommendation.txt'):
     try:
         df = pd.read_csv(filepath)
@@ -86,11 +94,9 @@ def get_avg_soil_properties_from_csv(color, filepath='soil crop recommendation.t
             'lihgtish brown': 'lightish brown',
             'redishbrown': 'reddish brown',
         })
-
         if color.lower() not in df['Soilcolor'].values:
-            print(f"❌ Couleur {color} introuvable dans le CSV.")
+            print(f"❌ Couleur {color} introuvable.")
             return None
-
         color_data = df[df['Soilcolor'] == color.lower()]
         return {
             'pH': round(color_data['Ph'].mean(), 2),
@@ -99,10 +105,30 @@ def get_avg_soil_properties_from_csv(color, filepath='soil crop recommendation.t
             'K': round(color_data['K'].mean(), 2)
         }
     except Exception as e:
-        print("💥 Erreur lecture CSV :", str(e))
+        print("💥 Erreur CSV :", str(e))
         return None
 
-# ============ RESCALE N, P, K ============
+# ============ WEATHER API ============
+def get_weather_from_coords(lat, lon):
+    try:
+        url = f"http://api.weatherapi.com/v1/forecast.json?key={WEATHER_API_KEY}&q={lat},{lon}&days=30"
+        res = requests.get(url)
+        data = res.json()
+        forecast_days = data['forecast']['forecastday']
+        total_precip = sum(day['day']['totalprecip_mm'] for day in forecast_days)
+        total_temp = sum(day['day']['avgtemp_c'] for day in forecast_days)
+        total_humidity = sum(day['day']['avghumidity'] for day in forecast_days)
+        count = len(forecast_days)
+        return {
+            'temperature': round(total_temp / count, 2),
+            'humidity': round(total_humidity / count, 2),
+            'precipitation': round(total_precip, 2)
+        }
+    except Exception as e:
+        print("🌧️ Erreur météo :", e)
+        return None
+
+# ============ RESCALE ============
 def rescale_value(value, old_min, old_max, new_min, new_max):
     if old_max - old_min == 0:
         return new_min
@@ -114,41 +140,10 @@ def rescale_npk(properties):
     properties["K"] = rescale_value(properties["K"], 41.134, 2119.0, 5, 205)
     return properties
 
-# ============ WEATHER API ============
-def get_weather_from_coords(lat, lon):
-    try:
-        url = f"http://api.weatherapi.com/v1/forecast.json?key={WEATHER_API_KEY}&q={lat},{lon}&days=30"
-        res = requests.get(url)
-        data = res.json()
-
-        forecast_days = data['forecast']['forecastday']
-        
-        # Initialisation
-        total_precip = 0.0
-        total_temp = 0.0
-        total_humidity = 0.0
-        count = len(forecast_days)
-
-        # Boucle sur chaque jour
-        for day in forecast_days:
-            total_precip += day['day']['totalprecip_mm']
-            total_temp += day['day']['avgtemp_c']
-            total_humidity += day['day']['avghumidity']
-
-        return {
-            'temperature': round(total_temp / count, 2),
-            'humidity': round(total_humidity / count, 2),
-            'precipitation': round(total_precip, 2)  # cumul total sur 30 jours
-        }
-
-    except Exception as e:
-        print("🌧️ Erreur API WeatherAPI :", e)
-        return None
-
-
-# ============ PREDICTION ============
+# ============ PRÉDICTION CULTURES ============
 def predict_top_crops(properties, k=3):
     try:
+        model, classes = load_crop_model()
         input_data = [[
             float(properties['N']),
             float(properties['P']),
@@ -158,29 +153,28 @@ def predict_top_crops(properties, k=3):
             float(properties['pH']),
             float(properties['precipitation'])
         ]]
-        proba = crop_model.predict_proba(input_data)[0]
-        predictions = sorted(zip(crop_classes, proba), key=lambda x: x[1], reverse=True)
-
+        proba = model.predict_proba(input_data)[0]
+        predictions = sorted(zip(classes, proba), key=lambda x: x[1], reverse=True)
         return [{"crop": c, "confidence": round(p, 3)} for c, p in predictions[:k]]
     except Exception as e:
-        print("💥 Erreur dans predict_top_crops :", str(e))
-        return [{"crop": "Erreur de prédiction", "confidence": 0.0}]
+        print("💥 Erreur crop:", str(e))
+        return [{"crop": "Erreur", "confidence": 0.0}]
 
 # ============ ROUTES ===============
 @app.route("/")
 def home():
-    return "🌿 API de prédiction de sol et recommandation de culture"
+    return "🌿 API Sol & Culture Active"
 
 @app.route("/check-soil", methods=["POST"])
 def check_soil():
     if 'image' not in request.files:
-        return jsonify({"error": "Aucune image reçue."}), 400
+        return jsonify({"error": "Aucune image"}), 400
     try:
         image = request.files['image']
         result = is_soil_image(image.read())
         return jsonify({"is_soil": result})
     except Exception as e:
-        return jsonify({"error": "Erreur de traitement", "details": str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/predict-crop', methods=['POST'])
 def predict_crop():
@@ -192,7 +186,7 @@ def predict_crop():
         image_bytes = image.read()
 
         if not is_soil_image(image_bytes):
-            return jsonify({"is_soil": False, "message": "L'image ne représente pas un sol."}), 200
+            return jsonify({"is_soil": False, "message": "Pas un sol"}), 200
 
         lat = request.form.get("lat")
         lon = request.form.get("lon")
@@ -201,7 +195,7 @@ def predict_crop():
 
         weather = get_weather_from_coords(lat, lon)
         if not weather:
-            return jsonify({"error": "Impossible de récupérer la météo"}), 500
+            return jsonify({"error": "Météo non trouvée"}), 500
 
         img_tensor = transform(Image.open(BytesIO(image_bytes)).convert("RGB")).unsqueeze(0)
         soil_type, confidence = predict_soil_type(img_tensor)
@@ -209,13 +203,10 @@ def predict_crop():
 
         props = get_avg_soil_properties_from_csv(soil_color)
         if not props:
-            return jsonify({"error": f"Propriétés non trouvées pour la couleur : {soil_color}"}), 500
+            return jsonify({"error": f"Couleur non trouvée : {soil_color}"}), 500
 
         props.update(weather)
-
-        # 🔁 Rescale des valeurs N, P et K avant prédiction
         props = rescale_npk(props)
-
         crops = predict_top_crops(props)
 
         return jsonify({
@@ -228,10 +219,9 @@ def predict_crop():
         })
 
     except Exception as e:
-        print("💥 Erreur dans /predict-crop :", str(e))
-        return jsonify({"error": "Erreur interne", "details": str(e)}), 500
+        print("💥 /predict-crop error :", str(e))
+        return jsonify({"error": str(e)}), 500
 
-# ============ LANCEMENT ================
+# ============ RUN ===============
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
-
+    app.run(host='0.0.0.0', port=10000)
