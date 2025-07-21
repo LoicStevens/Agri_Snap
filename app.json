@@ -23,7 +23,7 @@
     "android": {
       "package": "com.test.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
@@ -49,10 +49,18 @@
         }
       ],
       "expo-build-properties",
-      "expo-sqlite"
+      
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "3cbce331-5976-4eac-8fbb-bfad0ce0f6a9"
+      }
     }
   }
 }

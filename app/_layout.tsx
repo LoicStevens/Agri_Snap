@@ -1,12 +1,15 @@
+// _layout.tsx
 import { Stack } from "expo-router";
+import { LogBox } from "react-native";
 import { useEffect } from "react";
-import { LogBox, StatusBar, StyleSheet } from "react-native";
-;
-export default function Layout() {
-  
 
-  
+export default function Layout() {
+  useEffect(() => {
+    LogBox.ignoreLogs(["Warning: ..."]);
+    console.log("App loaded");
+  }, []);
+
   return (
-  <Stack />
-    );
+    <Stack />
+  );
 }
