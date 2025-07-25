@@ -35,7 +35,7 @@ export default function HomeScreen() {
               Révélez le plein potentiel de vos récoltes grâce à l’agriculture numérique.
             </Text>
             <Text className="text-lg text-white text-center leading-relaxed font-medium">
-              <span className='text-xl text-green-800 font-bold'>AgriSnap</span> vous aide à analyser votre sol,{'\n'} comprendre ses besoins et recommander les cultures idéales.
+              <Text className='text-xl text-green-800 font-bold'>AgriSnap</Text> vous aide à analyser votre sol,{'\n'} comprendre ses besoins et recommander les cultures idéales.
             </Text>
           </View>
 

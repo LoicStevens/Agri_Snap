@@ -17,6 +17,13 @@ import mungbeanImg from '../../assets/crops/mungbean.jpg';
 import mothbeansImg from '../../assets/crops/mothbeans.jpg';
 import coffeeImg from "../../assets/crops/coffee.jpg";
 import juteImg from "../../assets/crops/jute.jpg";
+import orangeImg from "../../assets/crops/orange.png";
+import blackgramImg from "../../assets/crops/blackgram.jpg";
+import mangoImg from "../../assets/crops/mango.jpg";
+import muskmelonImg from "../../assets/crops/muskmelon.jpg";
+import papayaImg from "../../assets/crops/papaya.jpg";
+import pigeonpeaImg from "../../assets/crops/pigeonpeas.jpeg";
+import pomegranateImg from "../../assets/crops/pomegranate.jpg";
 
 export const cropDetails = {
   maize: {
@@ -109,6 +116,41 @@ coffee: {
   title: "Café",
   image: coffeeImg,
   description: `☕ Le caféier pousse dans les zones tropicales entre 18°C et 24°C, à l'ombre partielle. Il préfère un sol riche en humus, bien drainé et légèrement acide (pH entre 6 et 6,5). 🌱 Les plants de café sont d'abord cultivés en pépinière pendant 6 à 12 mois avant d'être transplantés. 🌿 L'arrosage doit être régulier mais modéré, car un excès d’eau peut nuire aux racines. Une fertilisation équilibrée (azote, phosphore, potassium) améliore la production. La récolte a lieu 2 à 3 ans après plantation, généralement à la main.`,
+},
+orange: {
+  title: "Orange",
+  image: orangeImg,
+  description: `🍊 L'oranger prospère dans les climats subtropicaux avec des températures entre 15°C et 30°C. Il préfère un sol bien drainé, sablo-limoneux, légèrement acide à neutre (pH 6-7). 🌱 Les jeunes plants sont élevés en pépinière puis transplantés au champ. 🌿 L’irrigation doit être régulière, surtout pendant la floraison et la formation des fruits. Une fertilisation riche en azote, phosphore et potassium favorise la qualité des fruits. La récolte a lieu 3 à 5 ans après la plantation.`,
+},
+blackgram: {
+  title: "Blackgram",
+  image: blackgramImg,
+  description: `🌾 Le blackgram (urad) est une légumineuse qui pousse bien dans les climats chauds et humides, entre 25°C et 35°C. Il préfère un sol argilo-limoneux bien drainé avec un pH de 6 à 7,5. 🌱 Il se sème directement en pleine terre. 🌿 Une irrigation légère au moment de la floraison et de la formation des gousses améliore le rendement. Le blackgram enrichit naturellement le sol en azote. La récolte intervient environ 80 à 100 jours après le semis.`,
+},
+muskmelon: {
+  title: "Melon (Muskmelon)",
+  image: muskmelonImg,
+  description: `🍈 Le melon musqué préfère un climat chaud et sec, avec des températures entre 25°C et 35°C. Il pousse bien dans des sols sablo-limoneux bien drainés avec un pH de 6 à 6,8. 🌱 Les graines sont semées directement au champ après le dernier gel. 🌿 L’irrigation doit être modérée, réduite durant la maturation pour concentrer les sucres. Une fertilisation équilibrée stimule la croissance. La récolte a lieu 75 à 90 jours après le semis.`,
+},
+mango: {
+  title: "Mangue",
+  image: mangoImg,
+  description: `🥭 Le manguier prospère dans les zones tropicales à subtropicales, avec des températures entre 24°C et 30°C. Il préfère les sols profonds, bien drainés, légèrement acides à neutres (pH 5,5 à 7,5). 🌱 Les plants sont issus de greffage ou semis et mis en terre en saison sèche. 🌿 L’arrosage est essentiel durant les premières années. Une taille régulière améliore la structure de l’arbre. Les premières récoltes interviennent après 3 à 5 ans selon la variété.`,
+},
+papaya: {
+  title: "Papaye",
+  image: papayaImg,
+  description: `🍃 Le papayer pousse dans les climats tropicaux et chauds, entre 20°C et 35°C. Il préfère un sol sablo-limoneux, riche en matière organique et bien drainé (pH 6-6,5). 🌱 Il se multiplie par semis direct ou par transplantation. 🌿 L’irrigation régulière est indispensable pour une croissance rapide. Une fertilisation équilibrée en NPK stimule la fructification. La récolte commence 6 à 9 mois après la plantation, selon les conditions.`,
+},
+pigeonpea: {
+  title: "Pois d’Angole (Pigeonpea)",
+  image: pigeonpeaImg,
+  description: `🌿 Le pois d’Angole est une légumineuse résistante à la sécheresse, poussant bien entre 18°C et 38°C. Il tolère divers types de sols mais préfère les sols bien drainés avec un pH de 5 à 7. 🌱 Il est semé directement au champ. 🌾 Peu exigeant en eau, il fixe l’azote atmosphérique et améliore la fertilité du sol. Il nécessite peu d’entretien et peut être récolté 4 à 6 mois après le semis selon la variété.`,
+},
+pomegranate: {
+  title: "Grenade",
+  image: pomegranateImg,
+  description: `🍎 Le grenadier s’adapte bien aux climats arides et semi-arides, avec des températures de 25°C à 35°C. Il préfère un sol léger, bien drainé, au pH de 5.5 à 7. 🌱 Les plants peuvent être issus de boutures ou de greffage. 💧 Une irrigation régulière améliore la fructification, surtout en période sèche. Une fertilisation équilibrée et un bon ensoleillement garantissent une bonne qualité des fruits. La récolte débute 2 à 3 ans après plantation.`,
 },
 
 };

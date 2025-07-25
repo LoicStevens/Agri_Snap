@@ -1,33 +1,14 @@
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { signInWithEmailAndPassword, signInWithCredential, GoogleAuthProvider } from "firebase/auth";
+import { useState } from "react";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebaseConfig";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as Google from "expo-auth-session/providers/google";
-import * as WebBrowser from "expo-web-browser";
-import * as AuthSession from "expo-auth-session";
-
 
 const GREEN_800 = "#166534";
 
-WebBrowser.maybeCompleteAuthSession();
-
 export default function LoginScreen() {
   const router = useRouter();
-
-  // Google Auth hook
-  const redirectUri = AuthSession.makeRedirectUri(); // Pas d'options ici
-
-const [request, response, promptAsync] = Google.useAuthRequest({
-  webClientId: "464632148031-9h1644hkkakge6qhs4f76qhje8rq6mda.apps.googleusercontent.com",
-  redirectUri,
-});
-
-
-
-// Tu peux aussi logger le redirectUri généré
-console.log("Redirect URI:", request?.redirectUri);
 
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
@@ -35,16 +16,6 @@ console.log("Redirect URI:", request?.redirectUri);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (response?.type === "success" && response.authentication) {
-      const { idToken } = response.authentication;
-      const credential = GoogleAuthProvider.credential(idToken);
-      signInWithCredential(auth, credential)
-        .then(() => router.replace("/home"))
-        .catch((err) => setError("Erreur Google : " + err.message));
-    }
-  }, [response]);
 
   const handleLogin = async () => {
     setError(null);
@@ -152,21 +123,8 @@ console.log("Redirect URI:", request?.redirectUri);
         <View style={styles.dividerLine} />
       </View>
 
-      <View style={styles.socialButtons}>
-        <TouchableOpacity
-          style={[styles.socialButton, styles.googleButton]}
-          onPress={() => promptAsync()}
-          disabled={!request}
-        >
-          <Image source={require("../assets/fonts/google.png")} style={styles.socialIcon} />
-          <Text style={[styles.socialText, styles.googleText]}>Google</Text>
-        </TouchableOpacity>
+      {/* Suppression des boutons sociaux Google/Facebook ici */}
 
-        <TouchableOpacity style={[styles.socialButton, styles.facebookButton]}>
-          <Image source={require("../assets/fonts/facebook.png")} style={styles.socialIcon} />
-          <Text style={[styles.socialText, styles.facebookText]}>Facebook</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }
@@ -281,43 +239,5 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
     color: "#666",
     fontSize: 13,
-  },
-  socialButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  socialButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    flex: 1,
-    justifyContent: "center",
-    marginHorizontal: 4,
-  },
-  googleButton: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  facebookButton: {
-    backgroundColor: "#3b5998",
-  },
-  socialIcon: {
-    width: 18,
-    height: 18,
-    marginRight: 6,
-  },
-  socialText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  googleText: {
-    color: "#444",
-  },
-  facebookText: {
-    color: "#fff",
   },
 });
