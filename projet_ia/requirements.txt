@@ -1,0 +1,10 @@
+flask
+flask-cors
+torch
+torchvision
+pandas
+joblib
+requests
+Pillow
+scikit-learn
+gunicorn
